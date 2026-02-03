@@ -34,11 +34,13 @@
 #define SERVER_PORT 5555
 #define BUFSIZE 4096
 
-static ssize_t full_send(int fd, const void *buf, size_t len) {
+static ssize_t full_send(int fd, const void *buf, size_t len) 
+{
     const uint8_t *p = buf;
     size_t left = len;
     /* Loop until all bytes have been sent or an error occurs. */
-    while (left > 0) {
+    while (left > 0) 
+    {
         ssize_t s = send(fd, p, left, 0);
         /* On error, retry if interrupted; otherwise return failure. */
         if (s < 0) {
@@ -55,11 +57,13 @@ static ssize_t full_send(int fd, const void *buf, size_t len) {
     return (ssize_t)len;
 }
 
-static ssize_t full_recv(int fd, void *buf, size_t len) {
+static ssize_t full_recv(int fd, void *buf, size_t len) 
+{
     uint8_t *p = buf;
     size_t left = len;
     /* Loop until the requested number of bytes have been received. */
-    while (left > 0) {
+    while (left > 0) 
+    {
         ssize_t r = recv(fd, p, left, 0);
         /* Retry on EINTR and propagate other errors. */
         if (r < 0) {
@@ -81,7 +85,8 @@ static ssize_t full_recv(int fd, void *buf, size_t len) {
  *  - hkdf_expand(prk, prk_len, info, info_len, out, out_len)
  */
 static int hkdf_extract(uint8_t *prk_out, const uint8_t *ikm, size_t ikm_len,
-                        const uint8_t *salt, size_t salt_len) {
+                        const uint8_t *salt, size_t salt_len) 
+{
     unsigned int prk_len = 0;
     if (!HMAC(EVP_sha256(), salt, (int)salt_len, ikm, ikm_len, prk_out, &prk_len))
         return 0;
@@ -91,7 +96,8 @@ static int hkdf_extract(uint8_t *prk_out, const uint8_t *ikm, size_t ikm_len,
 
 static int hkdf_expand(const uint8_t *prk, size_t prk_len,
                        const uint8_t *info, size_t info_len,
-                       uint8_t *out, size_t out_len) {
+                       uint8_t *out, size_t out_len) 
+{
     const size_t hash_len = SHA256_DIGEST_LENGTH;
     uint8_t t[SHA256_DIGEST_LENGTH];
     size_t t_len = 0;
@@ -100,16 +106,28 @@ static int hkdf_expand(const uint8_t *prk, size_t prk_len,
 
     uint8_t *okm = out;
     size_t remaining = out_len;
-    for (uint8_t i = 1; i <= n; ++i) {
+    for (uint8_t i = 1; i <= n; ++i) 
+    {
         HMAC_CTX *hctx = HMAC_CTX_new();
-        if (!hctx) return 0;
-        if (HMAC_Init_ex(hctx, prk, (int)prk_len, EVP_sha256(), NULL) != 1) { HMAC_CTX_free(hctx); return 0; }
-        if (t_len > 0) HMAC_Update(hctx, t, t_len);
-        if (info && info_len > 0) HMAC_Update(hctx, info, info_len);
+        if (!hctx) 
+            return 0;
+        if (HMAC_Init_ex(hctx, prk, (int)prk_len, EVP_sha256(), NULL) != 1) 
+        { 
+            HMAC_CTX_free(hctx); 
+            return 0; 
+        }
+        if (t_len > 0) 
+                HMAC_Update(hctx, t, t_len);
+        if (info && info_len > 0) 
+            HMAC_Update(hctx, info, info_len);
         uint8_t c = i;
         HMAC_Update(hctx, &c, 1);
         unsigned int len = 0;
-        if (HMAC_Final(hctx, t, &len) != 1) { HMAC_CTX_free(hctx); return 0; }
+        if (HMAC_Final(hctx, t, &len) != 1) 
+        { 
+            HMAC_CTX_free(hctx); 
+            return 0; 
+        }
         HMAC_CTX_free(hctx);
         size_t copy_len = (remaining > hash_len) ? hash_len : remaining;
         memcpy(okm, t, copy_len);
@@ -130,7 +148,8 @@ static int hkdf_sha256(const uint8_t *ikm, size_t ikm_len,const uint8_t *info, s
     uint8_t prk[SHA256_DIGEST_LENGTH];
     uint8_t zero_salt[SHA256_DIGEST_LENGTH];
     memset(zero_salt, 0, sizeof(zero_salt));
-    if (!hkdf_extract(prk, ikm, ikm_len, zero_salt, sizeof(zero_salt))) return 0;
+    if (!hkdf_extract(prk, ikm, ikm_len, zero_salt, sizeof(zero_salt))) 
+        return 0;
     int ok = hkdf_expand(prk, SHA256_DIGEST_LENGTH, info, info_len, out, out_len);
     OPENSSL_cleanse(prk, sizeof(prk));
     return ok;
